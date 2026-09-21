@@ -119,6 +119,8 @@ export class SprintGame {
   jumpBuf = 0;
   onGround = true;
   shake = 0;
+  stretchT = 0;
+  squashT = 0;
   heat = 0;
   prey = 0;
   topMph = 0;
@@ -251,6 +253,8 @@ export class SprintGame {
     this.jumpBuf = 0;
     this.onGround = true;
     this.shake = 0;
+    this.stretchT = 0;
+    this.squashT = 0;
     this.heat = 0;
     this.prey = 0;
     this.topMph = pxToMph(SPEED_START);
@@ -287,6 +291,8 @@ export class SprintGame {
     this.coyote = 0;
     this.jumpBuf = 0;
     this.duck = 0;
+    this.stretchT = 0.08;
+    this.squashT = 0;
     this.beep(420, 0.07, "square", 0.035);
   }
 
@@ -393,6 +399,8 @@ export class SprintGame {
       if (!this.onGround) {
         this.onGround = true;
         this.puff(PLAYER_X - 10, GROUND - 6, 5);
+        this.squashT = 0.14;
+        this.stretchT = 0;
       }
     } else {
       this.onGround = false;
@@ -447,6 +455,8 @@ export class SprintGame {
     this.hillOff = (this.hillOff + this.speed * 0.35 * dt) % VW;
     this.farOff = (this.farOff + this.speed * 0.12 * dt) % VW;
     this.shake = Math.max(0, this.shake - dt * 28);
+    this.stretchT = Math.max(0, this.stretchT - dt);
+    this.squashT = Math.max(0, this.squashT - dt);
 
     this.hudTick += 1;
     if (this.hudTick >= HUD_EVERY) {
@@ -651,9 +661,29 @@ export class SprintGame {
     const w = duck ? 128 : 148;
     const y = this.y - h + 8;
     ctx.save();
+    // Squash / stretch anchored at the feet so the silhouette stays grounded.
+    let sx = 1;
+    let sy = 1;
+    if (this.stretchT > 0) {
+      // Takeoff: slightly taller and thinner for ~80ms.
+      const t = this.stretchT / 0.08;
+      const k = t * t; // ease out
+      sx = 1 - 0.08 * k;
+      sy = 1 + 0.12 * k;
+    } else if (this.squashT > 0) {
+      // Landing: wider and shorter, then springs back.
+      const t = this.squashT / 0.14;
+      const k = t < 0.55 ? t / 0.55 : (1 - t) / 0.45;
+      sx = 1 + 0.16 * k;
+      sy = 1 - 0.18 * k;
+    }
     if (duck) {
+      sx *= 1.08;
+      sy *= 0.72;
+    }
+    if (sx !== 1 || sy !== 1) {
       ctx.translate(PLAYER_X, this.y);
-      ctx.scale(1.08, 0.72);
+      ctx.scale(sx, sy);
       ctx.translate(-PLAYER_X, -this.y);
     }
     if (img) {
