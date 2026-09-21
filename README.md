@@ -5,6 +5,16 @@ Savanna sprint — you are the fastest land animal.
 **Status:** playable v1  
 **Login:** no · **Database:** no · **Type:** game (`x:game`)
 
+## Live app
+
+Published Grok Build preview (Florida field timer / hunt board):
+
+**https://fleet-lilac-moon-zenith.grok.me**
+
+Grok project id: `01a0b57b-7efb-7b52-bddc-b932dc6c7469`
+
+This repository (`davidreader77-ux/cheetah-speed`) is the GitHub workspace for Cheetah Speed. The grok.me URL is the hosted Build preview. Official unminified export from Build Mode should land here.
+
 ## Play
 
 Tap **Play**. You auto-run.
