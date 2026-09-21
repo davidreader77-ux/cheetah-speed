@@ -8,6 +8,7 @@ export type Hud = {
   distanceM: number;
   bestDistanceM: number;
   prey: number;
+  streak: number;
   heat: number;
 };
 
@@ -121,6 +122,7 @@ export class SprintGame {
   shake = 0;
   heat = 0;
   prey = 0;
+  streak = 0;
   topMph = 0;
   bestMph = 0;
   bestDistanceM = 0;
@@ -253,6 +255,7 @@ export class SprintGame {
     this.shake = 0;
     this.heat = 0;
     this.prey = 0;
+    this.streak = 0;
     this.topMph = pxToMph(SPEED_START);
     this.dust = [];
     this.spawnAt = this.dist + 640;
@@ -294,6 +297,7 @@ export class SprintGame {
     if (this.mode !== "playing") return;
     this.mode = "result";
     this.shake = 14;
+    this.streak = 0;
     const metres = this.dist / 18;
     if (this.topMph > this.bestMph) this.bestMph = this.topMph;
     if (metres > this.bestDistanceM) this.bestDistanceM = metres;
@@ -417,6 +421,7 @@ export class SprintGame {
         if (hit && !e.caught && this.duck <= 0) {
           e.caught = true;
           this.prey += 1;
+          this.streak += 1;
           this.beep(660, 0.09, "sine", 0.045);
         }
       } else if (hit) {
@@ -477,6 +482,7 @@ export class SprintGame {
       distanceM: this.dist / 18,
       bestDistanceM: this.bestDistanceM,
       prey: this.prey,
+      streak: this.streak,
       heat: this.heat,
     });
   }

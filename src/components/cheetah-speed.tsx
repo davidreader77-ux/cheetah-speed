@@ -9,6 +9,7 @@ const INITIAL: Hud = {
   distanceM: 0,
   bestDistanceM: 0,
   prey: 0,
+  streak: 0,
   heat: 0,
 };
 
@@ -88,6 +89,11 @@ function PlayHud({ hud }: { hud: Hud }) {
           </p>
           <p className="mt-1 text-xs font-medium uppercase tracking-widest text-cream-dim">
             Prey {hud.prey}
+            {hud.streak >= 2 ? (
+              <span className="ml-1.5 text-cream">
+                {hud.streak}x
+              </span>
+            ) : null}
           </p>
         </div>
       </div>
