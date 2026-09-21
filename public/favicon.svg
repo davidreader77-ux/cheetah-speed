@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Cheetah Speed">
+  <rect width="64" height="64" rx="14" fill="#1A140C"/>
+  <circle cx="12" cy="12" r="5" fill="#D4A017"/>
+  <g fill="none" stroke="#F3E6C8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M8 28 C4 22 6 16 8 14" stroke-width="4"/>
+    <path d="M20 42 L14 56 M26 42 L28 54 M38 42 L44 54 M34 40 L30 54" stroke-width="2.5"/>
+  </g>
+  <g fill="#F3E6C8">
+    <ellipse cx="29" cy="36" rx="17" ry="8"/>
+    <polygon points="40,32 50,26 52,34 42,38"/>
+    <ellipse cx="54" cy="29" rx="7" ry="7"/>
+    <polygon points="58,27 62,32 57,35"/>
+    <polygon points="50,16 55,26 47,26"/>
+  </g>
+</svg>
