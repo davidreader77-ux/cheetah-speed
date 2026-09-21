@@ -20,7 +20,10 @@ type Entity = {
   h: number;
   caught: boolean;
   anim: number;
+  nearMissed: boolean;
 };
+
+type NearFlash = { life: number; max: number; x: number; y: number };
 
 type Dust = { x: number; y: number; vx: number; vy: number; life: number; max: number };
 
@@ -127,6 +130,7 @@ export class SprintGame {
   entities: Entity[] = [];
   pool: Entity[] = [];
   dust: Dust[] = [];
+  nearFlash: NearFlash | null = null;
   spawnAt = 900;
   lastKind: Kind | null = null;
   grassOff = 0;
@@ -255,6 +259,7 @@ export class SprintGame {
     this.prey = 0;
     this.topMph = pxToMph(SPEED_START);
     this.dust = [];
+    this.nearFlash = null;
     this.spawnAt = this.dist + 640;
     this.lastKind = null;
     this.animT = 0;
@@ -311,6 +316,7 @@ export class SprintGame {
       h: size.h,
       caught: false,
       anim: 0,
+      nearMissed: false,
     };
     e.kind = kind;
     e.x = VW + 48;
@@ -318,6 +324,7 @@ export class SprintGame {
     e.h = size.h;
     e.caught = false;
     e.anim = 0;
+    e.nearMissed = false;
     return e;
   }
 
@@ -422,6 +429,28 @@ export class SprintGame {
       } else if (hit) {
         this.crash();
         break;
+      } else if (!e.nearMissed) {
+        // Near-miss: expanded AABB by ~18px, no actual collision
+        const margin = 18;
+        const near = aabb(
+          pLeft - margin,
+          pTop - margin,
+          pW + margin * 2,
+          pH + margin * 2,
+          box.x,
+          box.y,
+          box.w,
+          box.h,
+        );
+        if (near) {
+          e.nearMissed = true;
+          const midX = box.x + box.w * 0.5;
+          const midY = box.y + box.h * 0.5;
+          this.puff(midX, midY, 6);
+          this.shake = Math.max(this.shake, 5);
+          this.nearFlash = { life: 0.55, max: 0.55, x: midX, y: midY - 28 };
+          this.beep(520, 0.05, "triangle", 0.025);
+        }
       }
     }
 
@@ -442,6 +471,10 @@ export class SprintGame {
     }
     this.dust = this.dust.filter((d) => d.life > 0);
     if (this.dust.length > 48) this.dust.splice(0, this.dust.length - 48);
+    if (this.nearFlash) {
+      this.nearFlash.life -= dt;
+      if (this.nearFlash.life <= 0) this.nearFlash = null;
+    }
 
     this.grassOff = (this.grassOff + this.speed * dt) % 140;
     this.hillOff = (this.hillOff + this.speed * 0.35 * dt) % VW;
@@ -517,6 +550,7 @@ export class SprintGame {
     for (const e of this.entities) this.drawEntity(ctx, e);
     this.drawCheetah(ctx);
     this.drawDust(ctx);
+    this.drawNearFlash(ctx);
     this.drawGrass(ctx);
     ctx.restore();
   }
@@ -674,6 +708,20 @@ export class SprintGame {
       ctx.ellipse(d.x, d.y, 7 * a + 2, 4 * a + 1, 0, 0, Math.PI * 2);
       ctx.fill();
     }
+  }
+
+  drawNearFlash(ctx: CanvasRenderingContext2D) {
+    const f = this.nearFlash;
+    if (!f) return;
+    const a = Math.max(0, f.life / f.max);
+    ctx.save();
+    ctx.globalAlpha = a;
+    ctx.fillStyle = "#F3E6C8";
+    ctx.font = "600 22px system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("Close", f.x, f.y);
+    ctx.restore();
   }
 
   loop = (t: number) => {
