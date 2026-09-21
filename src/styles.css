@@ -1,0 +1,63 @@
+@import "tailwindcss";
+
+@theme {
+  --color-charcoal: #1A140C;
+  --color-gold: #D4A017;
+  --color-cream: #F5F0E6;
+  --color-savanna: #C4A35A;
+  --color-savanna-dark: #8B7355;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+@keyframes run-legs {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(12deg);
+  }
+}
+
+@keyframes run-body {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes scroll-ground {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: -400px 0;
+  }
+}
+
+.cheetah-run {
+  animation: run-body 0.22s ease-in-out infinite;
+}
+
+.cheetah-leg {
+  transform-origin: top center;
+  animation: run-legs 0.22s ease-in-out infinite;
+}
+
+.cheetah-leg:nth-child(even) {
+  animation-delay: -0.11s;
+}
+
+.ground-scroll {
+  animation: scroll-ground 1.2s linear infinite;
+}
