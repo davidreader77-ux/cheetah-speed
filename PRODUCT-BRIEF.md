@@ -5,31 +5,28 @@
 | | |
 |---|---|
 | **Name** | Cheetah Speed |
-| **Pitch** | A savanna sprint game — you are the fastest land animal |
-| **Audience** | Anyone who wants a short browser game |
-| **Job to be done** | When I have a minute, I want to sprint a cheetah and beat my top speed |
-| **Live** | Playable v1 in Grok App Builder |
-| **Success looks like** | First-time player starts a run, sees speed, crashes or lasts, taps to retry |
+| **Pitch** | A savanna sprint — you are the fastest land animal |
+| **Audience** | Athletes and anyone who wants a short, timed sprint |
+| **Job to be done** | When I have a minute, I want to run a 100m as a cheetah and beat my PRs |
+| **Live** | Playable in Grok App Builder |
+| **Success looks like** | Player times a 100, sees 40yd + vs Bolt/cheetah, or hunts and gets a session recap |
 
-## Must have (v1 — shipped)
+## Must have (shipped)
 
-1. **Sprint** — auto-run, world scrolls, cheetah animates
-2. **Speed** — current + best mph on screen, localStorage high score
-3. **Challenge** — mounds (jump), thorn branches (duck), gazelle (catch), crash + Try again
+1. **Hunt** — auto-run, jump mounds, duck thorn, catch gazelle, crash + retry
+2. **100m dash** — timed 100, 40-yard split, DNF on a hit, official time vs cheetah 5.95 / Bolt 9.58
+3. **Combine recap** — peak mph, splits, PR badges, localStorage `cheetah-speed-v1`
 
 ## Next (bots pick these, lowest open issue first)
 
 - Cleaner cheetah / gazelle run cycles (ghost limbs) — #5
-- Prey streak on the HUD — #6
-- Stronger duck silhouette so slide reads at a glance — #7
+- Stronger duck silhouette — #7
 - Mute toggle that persists — #8
 - Sky shifts toward dusk as heat rises — #9
 - Near-miss dust on a close jump/duck — #10
 - Land squash / takeoff stretch — #11
 
-## Nice later
-
-- Share-a-score image
+Do **not** replace Hunt / 100m with a CSS sketch. Do not add accounts or a global leaderboard. Prey streak (#6) is already in the live hunt HUD — skip if already present.
 
 ## Out of scope
 
@@ -47,12 +44,13 @@
 
 ## Screens
 
-1. **Title** — Cheetah Speed lockup, Play, personal best
-2. **Run** — savanna, cheetah, speed / distance / heat / prey
-3. **Result** — top speed, Try again
+1. **Title** — Field test lockup, Hunt + 100m, PRs vs Bolt/cheetah marks
+2. **Hunt** — savanna, speed / distance / heat / prey / live splits
+3. **100m** — clock, metres left, 40yd split
+4. **Result** — official time or session recap, PR badges, run it back
 
 ## Brand
 
-- Vibe: golden-hour, fast, premium indie
+- Vibe: golden-hour, fast, premium indie, combine-sheet stats
 - Colors: `#1A140C` / cream `#F3E6C8` / `#D4A017`
 - Avoid: purple AI-SaaS gradients, cartoon clipart that fights the share card
