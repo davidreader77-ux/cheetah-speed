@@ -346,7 +346,8 @@ export class SprintGame {
       return { x: e.x + 16, y: GROUND - e.h + 10, w: e.w - 32, h: e.h - 10 };
     }
     if (e.kind === "branch") {
-      return { x: e.x + 12, y: GROUND - 76, w: e.w - 24, h: 34 };
+      // Branch sits at standing-head height so upright hits; ducked clears with visible air.
+      return { x: e.x + 12, y: GROUND - 88, w: e.w - 24, h: 36 };
     }
     return { x: e.x + 10, y: GROUND - e.h + 6, w: e.w - 20, h: e.h - 8 };
   }
@@ -400,7 +401,8 @@ export class SprintGame {
 
     if (this.dist >= this.spawnAt) this.spawn();
 
-    const pH = this.duck > 0 ? 30 : 50;
+    // Standing hitbox reaches branch height; ducked is clearly under it.
+    const pH = this.duck > 0 ? 24 : 52;
     const pW = 72;
     const pTop = this.y - pH;
     const pLeft = PLAYER_X - 18;
@@ -622,15 +624,26 @@ export class SprintGame {
       }
     } else if (e.kind === "branch") {
       const img = this.images.branch;
-      const top = GROUND - 78;
+      // Visual top matches standing-head height (see entityBox).
+      const top = GROUND - 90;
       if (img) ctx.drawImage(img, e.x, top, e.w, e.h);
       else {
         ctx.strokeStyle = "#4a3218";
-        ctx.lineWidth = 8;
+        ctx.lineWidth = 9;
         ctx.beginPath();
-        ctx.moveTo(e.x, top + 18);
-        ctx.quadraticCurveTo(e.x + e.w * 0.5, top, e.x + e.w, top + 16);
+        ctx.moveTo(e.x, top + 20);
+        ctx.quadraticCurveTo(e.x + e.w * 0.5, top, e.x + e.w, top + 18);
         ctx.stroke();
+        // Thorns for readability
+        ctx.strokeStyle = "#3a2810";
+        ctx.lineWidth = 3;
+        for (let i = 0; i < 5; i++) {
+          const tx = e.x + 24 + i * 32;
+          ctx.beginPath();
+          ctx.moveTo(tx, top + 10);
+          ctx.lineTo(tx - 4, top - 8);
+          ctx.stroke();
+        }
       }
     } else {
       const img = this.images.gazelle;
@@ -647,23 +660,137 @@ export class SprintGame {
   drawCheetah(ctx: CanvasRenderingContext2D) {
     const img = this.images.cheetah;
     const duck = this.duck > 0;
-    const h = duck ? 58 : 92;
-    const w = duck ? 128 : 148;
-    const y = this.y - h + 8;
+    // Duck is clearly lower than standing run; silhouette remains a cheetah.
+    const h = duck ? 44 : 92;
+    const w = duck ? 152 : 148;
+    const y = this.y - h + (duck ? 4 : 8);
     ctx.save();
     if (duck) {
+      // Stronger horizontal stretch + vertical squash so the slide reads at a glance.
       ctx.translate(PLAYER_X, this.y);
-      ctx.scale(1.08, 0.72);
+      ctx.scale(1.18, 0.58);
       ctx.translate(-PLAYER_X, -this.y);
     }
     if (img) {
-      const f = this.onGround ? Math.floor(this.animT * (8 + this.speed / 180)) % 6 : 2;
+      const f = this.onGround
+        ? Math.floor(this.animT * (8 + this.speed / 180)) % 6
+        : 2;
       this.drawSheet(ctx, img, 3, 2, f, PLAYER_X - w * 0.45, y, w, h);
     } else {
-      ctx.fillStyle = "#d4a017";
-      ctx.fillRect(PLAYER_X - w * 0.45, y, w, h * 0.55);
+      // Procedural silhouette: standing gallop vs low slide.
+      this.drawCheetahShape(ctx, duck, w, h, y);
     }
     ctx.restore();
+  }
+
+  /** Fallback cheetah shape so duck is obvious even without sprite sheets. */
+  drawCheetahShape(
+    ctx: CanvasRenderingContext2D,
+    duck: boolean,
+    w: number,
+    h: number,
+    y: number,
+  ) {
+    const cx = PLAYER_X;
+    const gold = "#d4a017";
+    const dark = "#1a140c";
+    const cream = "#f3e6c8";
+    ctx.fillStyle = gold;
+    if (duck) {
+      // Long low body, head forward, legs tucked — clearly under branch height.
+      ctx.beginPath();
+      ctx.ellipse(cx - 8, y + h * 0.55, w * 0.42, h * 0.38, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // Head
+      ctx.beginPath();
+      ctx.ellipse(cx + w * 0.28, y + h * 0.42, 22, 16, -0.15, 0, Math.PI * 2);
+      ctx.fill();
+      // Ears
+      ctx.fillStyle = dark;
+      ctx.beginPath();
+      ctx.moveTo(cx + w * 0.32, y + h * 0.22);
+      ctx.lineTo(cx + w * 0.36, y + h * 0.08);
+      ctx.lineTo(cx + w * 0.4, y + h * 0.24);
+      ctx.fill();
+      // Tucked legs (short bars under body)
+      ctx.fillStyle = "#b8860b";
+      ctx.fillRect(cx - w * 0.28, y + h * 0.78, 14, h * 0.18);
+      ctx.fillRect(cx - w * 0.08, y + h * 0.8, 12, h * 0.16);
+      ctx.fillRect(cx + w * 0.08, y + h * 0.78, 14, h * 0.18);
+      // Tail
+      ctx.strokeStyle = gold;
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(cx - w * 0.4, y + h * 0.5);
+      ctx.quadraticCurveTo(cx - w * 0.55, y + h * 0.2, cx - w * 0.48, y + h * 0.05);
+      ctx.stroke();
+      // Spots
+      ctx.fillStyle = dark;
+      for (const [sx, sy] of [
+        [-18, 0.45],
+        [0, 0.5],
+        [16, 0.42],
+        [-8, 0.62],
+      ] as const) {
+        ctx.beginPath();
+        ctx.ellipse(cx + sx, y + h * sy, 4, 3, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else {
+      // Standing: taller body, four legs, head up.
+      ctx.beginPath();
+      ctx.ellipse(cx - 4, y + h * 0.42, w * 0.36, h * 0.28, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // Head
+      ctx.beginPath();
+      ctx.ellipse(cx + w * 0.26, y + h * 0.22, 20, 18, -0.2, 0, Math.PI * 2);
+      ctx.fill();
+      // Ears
+      ctx.fillStyle = dark;
+      ctx.beginPath();
+      ctx.moveTo(cx + w * 0.3, y + h * 0.06);
+      ctx.lineTo(cx + w * 0.34, y - 4);
+      ctx.lineTo(cx + w * 0.38, y + h * 0.08);
+      ctx.fill();
+      // Legs (gallop pose)
+      const legPhase = Math.floor(this.animT * (8 + this.speed / 180)) % 4;
+      ctx.fillStyle = "#b8860b";
+      const legYs = [
+        [0.55, 0.95],
+        [0.6, 0.92],
+        [0.58, 0.97],
+        [0.62, 0.9],
+      ];
+      const offs = [-w * 0.22, -w * 0.06, w * 0.08, w * 0.22];
+      for (let i = 0; i < 4; i++) {
+        const [a, b] = legYs[(i + legPhase) % 4];
+        ctx.fillRect(cx + offs[i] - 5, y + h * a, 10, h * (b - a));
+      }
+      // Tail
+      ctx.strokeStyle = gold;
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(cx - w * 0.36, y + h * 0.38);
+      ctx.quadraticCurveTo(cx - w * 0.5, y + h * 0.15, cx - w * 0.42, y + h * 0.02);
+      ctx.stroke();
+      // Spots
+      ctx.fillStyle = dark;
+      for (const [sx, sy] of [
+        [-14, 0.35],
+        [4, 0.4],
+        [18, 0.32],
+        [-6, 0.5],
+      ] as const) {
+        ctx.beginPath();
+        ctx.ellipse(cx + sx, y + h * sy, 4, 3, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      // Eye accent
+      ctx.fillStyle = cream;
+      ctx.beginPath();
+      ctx.arc(cx + w * 0.3, y + h * 0.2, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 
   drawDust(ctx: CanvasRenderingContext2D) {
