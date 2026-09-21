@@ -17,17 +17,19 @@
 2. **Speed** — current + best mph on screen, localStorage high score
 3. **Challenge** — mounds (jump), thorn branches (duck), gazelle (catch), crash + Try again
 
-## Next (bots pick these)
+## Next (bots pick these, lowest open issue first)
 
-- Cleaner cheetah / gazelle run cycles (ghost limbs)
-- Prey streak on the HUD
-- Stronger duck silhouette so slide reads at a glance
+- Cleaner cheetah / gazelle run cycles (ghost limbs) — #5
+- Prey streak on the HUD — #6
+- Stronger duck silhouette so slide reads at a glance — #7
+- Mute toggle that persists — #8
+- Sky shifts toward dusk as heat rises — #9
+- Near-miss dust on a close jump/duck — #10
+- Land squash / takeoff stretch — #11
 
 ## Nice later
 
-- Day/night lighting
 - Share-a-score image
-- Mute toggle
 
 ## Out of scope
 
