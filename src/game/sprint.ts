@@ -58,6 +58,20 @@ function clamp(n: number, a: number, b: number) {
   return Math.max(a, Math.min(b, n));
 }
 
+/** Lerp two #rrggbb colors by t in [0,1]. */
+function mixHex(a: string, b: string, t: number) {
+  const parse = (h: string) => {
+    const n = parseInt(h.slice(1), 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  };
+  const [ar, ag, ab] = parse(a);
+  const [br, bg, bb] = parse(b);
+  const r = Math.round(ar + (br - ar) * t);
+  const g = Math.round(ag + (bg - ag) * t);
+  const bl = Math.round(ab + (bb - ab) * t);
+  return `#${((1 << 24) + (r << 16) + (g << 8) + bl).toString(16).slice(1)}`;
+}
+
 function pxToMph(px: number) {
   return (px / SPEED_CAP) * 72;
 }
@@ -521,26 +535,47 @@ export class SprintGame {
     ctx.restore();
   }
 
+  /** Visual heat: 0 on title/result so they stay golden-hour; live heat while playing. */
+  skyHeat() {
+    return this.mode === "playing" ? this.heat : 0;
+  }
+
   drawSky(ctx: CanvasRenderingContext2D) {
+    const t = this.skyHeat();
+    // Golden hour → deeper dusk (charcoal / amber / gold only — no purple)
+    const top = mixHex("#5a3a22", "#2a1810", t);
+    const mid = mixHex("#c47a32", "#7a3a1c", t);
+    const lower = mixHex("#e8b15a", "#c47a32", t);
+    const bottom = mixHex("#d4a017", "#a07020", t);
+    const sunCore = mixHex("#f3d7a0", "#e8a060", t);
+    const sunGlow = mixHex("#f3d7a0", "#d48840", t);
+    const sunY = 128 + t * 48;
+    const sunR = 86 - t * 12;
+
     const g = ctx.createLinearGradient(0, 0, 0, VH);
-    g.addColorStop(0, "#5a3a22");
-    g.addColorStop(0.38, "#c47a32");
-    g.addColorStop(0.62, "#e8b15a");
-    g.addColorStop(1, "#d4a017");
+    g.addColorStop(0, top);
+    g.addColorStop(0.38, mid);
+    g.addColorStop(0.62, lower);
+    g.addColorStop(1, bottom);
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, VW, VH);
+
     ctx.beginPath();
-    ctx.fillStyle = "#f3d7a0";
-    ctx.arc(1080, 128, 86, 0, Math.PI * 2);
+    ctx.fillStyle = sunCore;
+    ctx.arc(1080, sunY, sunR, 0, Math.PI * 2);
     ctx.fill();
     ctx.beginPath();
-    ctx.fillStyle = "rgba(243, 215, 160, 0.18)";
-    ctx.arc(1080, 128, 150, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(${parseInt(sunGlow.slice(1, 3), 16)}, ${parseInt(sunGlow.slice(3, 5), 16)}, ${parseInt(sunGlow.slice(5, 7), 16)}, ${0.18 - t * 0.06})`;
+    ctx.arc(1080, sunY, 150 - t * 20, 0, Math.PI * 2);
     ctx.fill();
   }
 
   drawHills(ctx: CanvasRenderingContext2D) {
-    ctx.fillStyle = "#7a5428";
+    const t = this.skyHeat();
+    const far = mixHex("#7a5428", "#4a3218", t);
+    const near = mixHex("#8d6330", "#5a3a1c", t);
+
+    ctx.fillStyle = far;
     ctx.beginPath();
     ctx.moveTo(-40, GROUND - 160);
     for (let x = 0; x <= VW + 80; x += 40) {
@@ -552,7 +587,7 @@ export class SprintGame {
     ctx.lineTo(-40, VH);
     ctx.fill();
 
-    ctx.fillStyle = "#8d6330";
+    ctx.fillStyle = near;
     ctx.beginPath();
     ctx.moveTo(-40, GROUND - 80);
     for (let x = 0; x <= VW + 80; x += 36) {
