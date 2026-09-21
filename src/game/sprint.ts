@@ -9,6 +9,7 @@ export type Hud = {
   bestDistanceM: number;
   prey: number;
   heat: number;
+  muted: boolean;
 };
 
 type Kind = "mound" | "branch" | "gazelle";
@@ -65,19 +66,25 @@ function pxToMph(px: number) {
 function loadBest() {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
-    if (!raw) return { bestMph: 0, bestDistanceM: 0 };
-    const p = JSON.parse(raw) as { v?: number; bestMph?: number; bestDistanceM?: number };
+    if (!raw) return { bestMph: 0, bestDistanceM: 0, muted: false };
+    const p = JSON.parse(raw) as {
+      v?: number;
+      bestMph?: number;
+      bestDistanceM?: number;
+      muted?: boolean;
+    };
     return {
       bestMph: Number(p.bestMph) || 0,
       bestDistanceM: Number(p.bestDistanceM) || 0,
+      muted: Boolean(p.muted),
     };
   } catch {
-    return { bestMph: 0, bestDistanceM: 0 };
+    return { bestMph: 0, bestDistanceM: 0, muted: false };
   }
 }
 
-function saveBest(bestMph: number, bestDistanceM: number) {
-  localStorage.setItem(SAVE_KEY, JSON.stringify({ v: 1, bestMph, bestDistanceM }));
+function saveBest(bestMph: number, bestDistanceM: number, muted: boolean) {
+  localStorage.setItem(SAVE_KEY, JSON.stringify({ v: 1, bestMph, bestDistanceM, muted }));
 }
 
 function aabb(
@@ -150,6 +157,7 @@ export class SprintGame {
     const saved = loadBest();
     this.bestMph = saved.bestMph;
     this.bestDistanceM = saved.bestDistanceM;
+    this.muted = saved.muted;
     this.bind();
     void this.load();
     this.emit();
@@ -238,6 +246,12 @@ export class SprintGame {
     o.stop(t + dur);
   }
 
+  toggleMute() {
+    this.muted = !this.muted;
+    saveBest(this.bestMph, this.bestDistanceM, this.muted);
+    this.emit();
+  }
+
   start() {
     this.unlockAudio();
     this.recycleAll();
@@ -297,7 +311,7 @@ export class SprintGame {
     const metres = this.dist / 18;
     if (this.topMph > this.bestMph) this.bestMph = this.topMph;
     if (metres > this.bestDistanceM) this.bestDistanceM = metres;
-    saveBest(this.bestMph, this.bestDistanceM);
+    saveBest(this.bestMph, this.bestDistanceM, this.muted);
     this.beep(90, 0.28, "sawtooth", 0.06);
     this.emit();
   }
@@ -478,6 +492,7 @@ export class SprintGame {
       bestDistanceM: this.bestDistanceM,
       prey: this.prey,
       heat: this.heat,
+      muted: this.muted,
     });
   }
 

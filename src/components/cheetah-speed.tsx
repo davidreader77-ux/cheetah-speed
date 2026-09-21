@@ -10,6 +10,7 @@ const INITIAL: Hud = {
   bestDistanceM: 0,
   prey: 0,
   heat: 0,
+  muted: false,
 };
 
 export function CheetahSpeed() {
@@ -39,8 +40,20 @@ export function CheetahSpeed() {
       />
 
       {hud.mode === "playing" && <PlayHud hud={hud} />}
-      {hud.mode === "title" && <TitleCard hud={hud} onPlay={() => game.current?.start()} />}
-      {hud.mode === "result" && <ResultCard hud={hud} onRetry={() => game.current?.start()} />}
+      {hud.mode === "title" && (
+        <TitleCard
+          hud={hud}
+          onPlay={() => game.current?.start()}
+          onMute={() => game.current?.toggleMute()}
+        />
+      )}
+      {hud.mode === "result" && (
+        <ResultCard
+          hud={hud}
+          onRetry={() => game.current?.start()}
+          onMute={() => game.current?.toggleMute()}
+        />
+      )}
 
       {hud.mode === "playing" && (
         <button
@@ -98,7 +111,28 @@ function PlayHud({ hud }: { hud: Hud }) {
   );
 }
 
-function TitleCard({ hud, onPlay }: { hud: Hud; onPlay: () => void }) {
+function MuteButton({ muted, onMute }: { muted: boolean; onMute: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onMute}
+      aria-label={muted ? "Unmute sound" : "Mute sound"}
+      className="mt-3 flex h-12 w-full items-center justify-center rounded-md border border-cream/20 bg-ink-2/80 text-sm font-medium tracking-wide text-cream transition-transform duration-[var(--motion-quick)] hover:border-cream/35 hover:bg-ink-2 active:scale-[0.98]"
+    >
+      {muted ? "Sound" : "Mute"}
+    </button>
+  );
+}
+
+function TitleCard({
+  hud,
+  onPlay,
+  onMute,
+}: {
+  hud: Hud;
+  onPlay: () => void;
+  onMute: () => void;
+}) {
   return (
     <div className="absolute inset-0 z-10 flex items-end justify-center bg-ink/25 px-4 pb-10 pt-16 md:items-center md:pb-0">
       <div className="w-full max-w-md rounded-xl border border-cream/15 bg-ink/75 px-6 py-7 backdrop-blur-md">
@@ -132,6 +166,7 @@ function TitleCard({ hud, onPlay }: { hud: Hud; onPlay: () => void }) {
         >
           Play
         </button>
+        <MuteButton muted={hud.muted} onMute={onMute} />
         <p className="mt-3 text-center text-xs leading-relaxed text-cream-dim">
           Auto-run · Jump W / Space / tap · Duck S / swipe down
         </p>
@@ -140,7 +175,15 @@ function TitleCard({ hud, onPlay }: { hud: Hud; onPlay: () => void }) {
   );
 }
 
-function ResultCard({ hud, onRetry }: { hud: Hud; onRetry: () => void }) {
+function ResultCard({
+  hud,
+  onRetry,
+  onMute,
+}: {
+  hud: Hud;
+  onRetry: () => void;
+  onMute: () => void;
+}) {
   const record = hud.topMph >= hud.bestMph - 0.05 && hud.topMph > 0;
   return (
     <div className="absolute inset-0 z-10 flex items-end justify-center bg-ink/40 px-4 pb-10 pt-16 md:items-center md:pb-0">
@@ -164,6 +207,7 @@ function ResultCard({ hud, onRetry }: { hud: Hud; onRetry: () => void }) {
         >
           Try again
         </button>
+        <MuteButton muted={hud.muted} onMute={onMute} />
       </div>
     </div>
   );
