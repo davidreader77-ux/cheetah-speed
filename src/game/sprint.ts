@@ -164,7 +164,7 @@ export class SprintGame {
             const img = new Image();
             img.crossOrigin = "anonymous";
             img.onload = () => {
-              this.images[n] = img;
+              this.images[n] = this.chromaKey(img);
               res();
             };
             img.onerror = () => res();
@@ -174,6 +174,25 @@ export class SprintGame {
     );
     this.ready = true;
     this.loop(0);
+  }
+
+  /** Magenta (#FF00FF) chroma-key → transparent canvas-backed image. */
+  chromaKey(src: HTMLImageElement): HTMLImageElement {
+    const c = document.createElement("canvas");
+    c.width = src.width;
+    c.height = src.height;
+    const g = c.getContext("2d");
+    if (!g) return src;
+    g.drawImage(src, 0, 0);
+    const id = g.getImageData(0, 0, c.width, c.height);
+    const d = id.data;
+    for (let i = 0; i < d.length; i += 4) {
+      if (d[i] > 200 && d[i + 1] < 80 && d[i + 2] > 200) d[i + 3] = 0;
+    }
+    g.putImageData(id, 0, 0);
+    const out = new Image();
+    out.src = c.toDataURL("image/png");
+    return out;
   }
 
   bind() {
@@ -566,14 +585,15 @@ export class SprintGame {
   }
 
   drawGround(ctx: CanvasRenderingContext2D) {
-    ctx.fillStyle = "#c4a05a";
-    ctx.fillRect(0, GROUND - 8, VW, VH - GROUND + 8);
-    ctx.fillStyle = "#b08948";
-    ctx.fillRect(0, GROUND - 8, VW, 10);
-    ctx.fillStyle = "#9a7338";
+    const ctx2 = ctx;
+    ctx2.fillStyle = "#c4a05a";
+    ctx2.fillRect(0, GROUND - 8, VW, VH - GROUND + 8);
+    ctx2.fillStyle = "#b08948";
+    ctx2.fillRect(0, GROUND - 8, VW, 10);
+    ctx2.fillStyle = "#9a7338";
     for (let i = 0; i < 18; i++) {
       const x = ((i * 90 - this.grassOff * 0.4) % (VW + 90)) - 40;
-      ctx.fillRect(x, GROUND + 18 + (i % 3) * 16, 70, 6);
+      ctx2.fillRect(x, GROUND + 18 + (i % 3) * 16, 70, 6);
     }
   }
 
@@ -635,11 +655,8 @@ export class SprintGame {
     } else {
       const img = this.images.gazelle;
       const f = Math.floor(e.anim * 10) % 4;
-      if (img) this.drawSheet(ctx, img, 2, 2, f, e.x, GROUND - e.h, e.w, e.h);
-      else {
-        ctx.fillStyle = "#d9c9a3";
-        ctx.fillRect(e.x, GROUND - e.h, e.w, e.h);
-      }
+      if (img && img.width > 0) this.drawSheet(ctx, img, 2, 2, f, e.x, GROUND - e.h, e.w, e.h);
+      else this.drawGazelleFrame(ctx, e.x, GROUND, e.w, e.h, f);
     }
     ctx.globalAlpha = 1;
   }
@@ -656,14 +673,223 @@ export class SprintGame {
       ctx.scale(1.08, 0.72);
       ctx.translate(-PLAYER_X, -this.y);
     }
-    if (img) {
+    if (img && img.width > 0) {
       const f = this.onGround ? Math.floor(this.animT * (8 + this.speed / 180)) % 6 : 2;
       this.drawSheet(ctx, img, 3, 2, f, PLAYER_X - w * 0.45, y, w, h);
     } else {
-      ctx.fillStyle = "#d4a017";
-      ctx.fillRect(PLAYER_X - w * 0.45, y, w, h * 0.55);
+      // Clean 6-frame procedural run: one body + four legs, shared baseline
+      this.drawCheetahFrame(ctx, PLAYER_X, this.y, w, h, this.onGround ? Math.floor(this.animT * (8 + this.speed / 180)) % 6 : 2);
     }
     ctx.restore();
+  }
+
+  /** Procedural cheetah: single body, exactly four legs, feet on shared baseline. */
+  drawCheetahFrame(ctx: CanvasRenderingContext2D, px: number, py: number, w: number, h: number, frame: number) {
+    const gold = "#d4a017";
+    const tawny = "#c48c28";
+    const cream = "#f3e6c8";
+    const dark = "#3c2810";
+    const charcoal = "#1a140c";
+    const baseline = py - 2;
+    const bodyH = h * 0.42;
+    const bodyY = baseline - bodyH - 6;
+    const bodyW = w * 0.55;
+    const bodyX = px - bodyW * 0.35;
+
+    // Tail
+    ctx.strokeStyle = tawny;
+    ctx.lineWidth = 5;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(bodyX + 6, bodyY + bodyH * 0.4);
+    ctx.quadraticCurveTo(bodyX - 18, bodyY - 4, bodyX - 28, bodyY + 10);
+    ctx.stroke();
+
+    // Body
+    ctx.fillStyle = gold;
+    ctx.beginPath();
+    ctx.ellipse(bodyX + bodyW / 2, bodyY + bodyH / 2, bodyW / 2, bodyH / 2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Underbelly
+    ctx.fillStyle = cream;
+    ctx.beginPath();
+    ctx.ellipse(bodyX + bodyW / 2 + 4, bodyY + bodyH * 0.7, bodyW * 0.38, bodyH * 0.28, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Spots
+    ctx.fillStyle = dark;
+    for (const [sx, sy] of [[0.25, 0.3], [0.45, 0.22], [0.65, 0.35], [0.35, 0.55], [0.55, 0.5]] as const) {
+      ctx.beginPath();
+      ctx.ellipse(bodyX + bodyW * sx, bodyY + bodyH * sy, 3.5, 2.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Head
+    const hx = bodyX + bodyW - 4;
+    const hy = bodyY - 2;
+    ctx.fillStyle = gold;
+    ctx.beginPath();
+    ctx.ellipse(hx + 14, hy + 10, 14, 11, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Snout
+    ctx.fillStyle = tawny;
+    ctx.beginPath();
+    ctx.ellipse(hx + 24, hy + 12, 8, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Ear
+    ctx.fillStyle = gold;
+    ctx.beginPath();
+    ctx.moveTo(hx + 6, hy + 4);
+    ctx.lineTo(hx + 2, hy - 8);
+    ctx.lineTo(hx + 14, hy + 2);
+    ctx.fill();
+    // Eye + tear
+    ctx.fillStyle = charcoal;
+    ctx.beginPath();
+    ctx.ellipse(hx + 12, hy + 7, 2.5, 2.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = charcoal;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(hx + 10, hy + 10);
+    ctx.lineTo(hx + 6, hy + 16);
+    ctx.stroke();
+
+    // Four legs — phase by frame (gallop), feet share baseline
+    const phases = [
+      // frame 0 gathered
+      { f: [0.62, 0.15, 0.72, 0.55, 0.68, 1], h: [0.22, 0.15, 0.12, 0.55, 0.18, 1] },
+      // 1 extend front
+      { f: [0.68, 0.1, 0.82, 0.45, 0.88, 0.95], h: [0.18, 0.2, 0.08, 0.6, 0.1, 1] },
+      // 2 airborne-ish
+      { f: [0.7, 0.05, 0.8, 0.35, 0.78, 0.75], h: [0.15, 0.25, 0.05, 0.5, 0.02, 0.9] },
+      // 3 stretch
+      { f: [0.72, 0.1, 0.88, 0.4, 0.95, 0.85], h: [0.12, 0.15, -0.02, 0.45, -0.05, 0.95] },
+      // 4 recover
+      { f: [0.65, 0.15, 0.75, 0.5, 0.7, 1], h: [0.25, 0.1, 0.18, 0.45, 0.22, 0.8] },
+      // 5 push
+      { f: [0.6, 0.2, 0.68, 0.6, 0.62, 1], h: [0.28, 0.08, 0.35, 0.4, 0.4, 0.9] },
+    ];
+    const p = phases[frame % 6];
+    const drawLeg = (sx: number, sy: number, kx: number, ky: number, fx: number, fy: number) => {
+      const x0 = bodyX + bodyW * sx;
+      const y0 = bodyY + bodyH * sy;
+      const x1 = bodyX + bodyW * kx;
+      const y1 = bodyY + bodyH * ky;
+      const x2 = bodyX + bodyW * fx;
+      const y2 = baseline - (1 - fy) * 8;
+      ctx.strokeStyle = tawny;
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.moveTo(x0, y0);
+      ctx.lineTo(x1, y1);
+      ctx.stroke();
+      ctx.strokeStyle = dark;
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+      ctx.fillStyle = charcoal;
+      ctx.beginPath();
+      ctx.ellipse(x2, y2, 5, 3.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+    };
+    drawLeg(p.f[0], p.f[1], p.f[2], p.f[3], p.f[4], p.f[5]);
+    // second front (slight offset)
+    drawLeg(p.f[0] - 0.06, p.f[1] + 0.05, p.f[2] - 0.05, p.f[3] + 0.05, p.f[4] - 0.08, p.f[5]);
+    drawLeg(p.h[0], p.h[1], p.h[2], p.h[3], p.h[4], p.h[5]);
+    drawLeg(p.h[0] + 0.06, p.h[1] + 0.05, p.h[2] + 0.05, p.h[3] + 0.05, p.h[4] + 0.08, p.h[5]);
+  }
+
+  /** Procedural gazelle: consistent animal, 4-frame run, shared baseline. */
+  drawGazelleFrame(ctx: CanvasRenderingContext2D, x: number, ground: number, w: number, h: number, frame: number) {
+    const body = "#d2be96";
+    const dark = "#8c6e46";
+    const cream = "#f3e6c8";
+    const charcoal = "#1a140c";
+    const baseline = ground - 2;
+    const bodyH = h * 0.45;
+    const bodyY = baseline - bodyH - 4;
+    const bodyW = w * 0.65;
+    const bodyX = x + (w - bodyW) / 2;
+
+    // Horns
+    ctx.strokeStyle = dark;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(bodyX + bodyW - 4, bodyY);
+    ctx.lineTo(bodyX + bodyW + 4, bodyY - 14);
+    ctx.moveTo(bodyX + bodyW + 2, bodyY);
+    ctx.lineTo(bodyX + bodyW + 10, bodyY - 12);
+    ctx.stroke();
+
+    // Tail
+    ctx.beginPath();
+    ctx.moveTo(bodyX + 4, bodyY + bodyH * 0.3);
+    ctx.lineTo(bodyX - 8, bodyY + 2);
+    ctx.stroke();
+
+    // Body
+    ctx.fillStyle = body;
+    ctx.beginPath();
+    ctx.ellipse(bodyX + bodyW / 2, bodyY + bodyH / 2, bodyW / 2, bodyH / 2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = cream;
+    ctx.beginPath();
+    ctx.ellipse(bodyX + bodyW / 2 + 2, bodyY + bodyH * 0.65, bodyW * 0.35, bodyH * 0.25, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Head
+    const hx = bodyX + bodyW - 2;
+    const hy = bodyY - 2;
+    ctx.fillStyle = body;
+    ctx.beginPath();
+    ctx.ellipse(hx + 10, hy + 8, 11, 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(hx + 18, hy + 9, 7, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = charcoal;
+    ctx.beginPath();
+    ctx.ellipse(hx + 8, hy + 5, 2, 2, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Legs — 4 frames, same animal
+    const phases = [
+      { f: [0.7, 0.2, 0.82, 0.55, 0.8, 1], h: [0.25, 0.2, 0.15, 0.55, 0.2, 1] },
+      { f: [0.75, 0.15, 0.9, 0.45, 0.95, 0.9], h: [0.2, 0.25, 0.1, 0.6, 0.12, 1] },
+      { f: [0.78, 0.1, 0.88, 0.4, 0.85, 0.7], h: [0.18, 0.2, 0.05, 0.5, 0.02, 0.95] },
+      { f: [0.7, 0.2, 0.8, 0.6, 0.75, 1], h: [0.28, 0.15, 0.35, 0.45, 0.4, 0.85] },
+    ];
+    const p = phases[frame % 4];
+    const drawLeg = (sx: number, sy: number, kx: number, ky: number, fx: number, fy: number) => {
+      const x0 = bodyX + bodyW * sx;
+      const y0 = bodyY + bodyH * sy;
+      const x1 = bodyX + bodyW * kx;
+      const y1 = bodyY + bodyH * ky;
+      const x2 = bodyX + bodyW * fx;
+      const y2 = baseline - (1 - fy) * 6;
+      ctx.strokeStyle = dark;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(x0, y0);
+      ctx.lineTo(x1, y1);
+      ctx.stroke();
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+      ctx.fillStyle = charcoal;
+      ctx.beginPath();
+      ctx.ellipse(x2, y2, 3.5, 2.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+    };
+    drawLeg(p.f[0], p.f[1], p.f[2], p.f[3], p.f[4], p.f[5]);
+    drawLeg(p.f[0] - 0.08, p.f[1] + 0.05, p.f[2] - 0.06, p.f[3] + 0.05, p.f[4] - 0.1, p.f[5]);
+    drawLeg(p.h[0], p.h[1], p.h[2], p.h[3], p.h[4], p.h[5]);
+    drawLeg(p.h[0] + 0.08, p.h[1] + 0.05, p.h[2] + 0.06, p.h[3] + 0.05, p.h[4] + 0.1, p.h[5]);
   }
 
   drawDust(ctx: CanvasRenderingContext2D) {
