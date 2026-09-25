@@ -91,6 +91,9 @@ function PlayHud({ hud }: { hud: Hud }) {
           </p>
         </div>
       </div>
+      <p className="mt-2 text-center text-xs font-medium uppercase tracking-widest text-cream-dim">
+        84 · Keaton Grundy
+      </p>
       <div className="mt-3 h-1 overflow-hidden rounded-full bg-ink/40">
         <div className="h-full rounded-full bg-gold" style={{ width: `${Math.round(hud.heat * 100)}%` }} />
       </div>
@@ -106,6 +109,9 @@ function TitleCard({ hud, onPlay }: { hud: Hud; onPlay: () => void }) {
         <h1 className="font-display mt-2 text-4xl font-semibold leading-none tracking-tight text-cream md:text-5xl">
           Cheetah Speed
         </h1>
+        <p className="mt-2 text-sm font-medium tracking-wide text-cream">
+          84 · Keaton Grundy
+        </p>
         <p className="mt-3 max-w-sm text-sm leading-relaxed text-cream-dim">
           You are the fastest land animal. Burst, jump the mounds, duck the thorn, run down gazelle.
         </p>
@@ -151,6 +157,7 @@ function ResultCard({ hud, onRetry }: { hud: Hud; onRetry: () => void }) {
         <h2 className="font-display mt-2 text-3xl font-semibold tracking-tight text-cream">
           {hud.topMph.toFixed(0)} mph
         </h2>
+        <p className="mt-2 text-sm text-cream">84 · Keaton Grundy</p>
         <p className="mt-2 text-sm text-cream-dim">
           {hud.distanceM.toFixed(0)} m · {hud.prey} prey
         </p>
